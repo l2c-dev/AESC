@@ -1,0 +1,19 @@
+simulacoes/
+venvs/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.ipynb_checkpoints/
+**/*.log
+**/*.out
+**/*.err
+**/*.tmp
+**/*.mod
+**/*.o
+**/*.exe
+**/*.ex
+**/build*/
+**/dist*/
+**/.git/         # evita git aninhado por acidente
+.DS_Store
+Thumbs.db
