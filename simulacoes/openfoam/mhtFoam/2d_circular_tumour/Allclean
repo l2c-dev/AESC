@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#------------------------------------------------------------------------------
+
+source /usr/lib/openfoam/openfoam2412/etc/bashrc
+
+foamListTimes -rm
+rm -rf 0
+rm -rf processor*
+rm -rf log.*
+rm -rf *.dat
+rm -rf *.vtk
+rm -r postProcessing
