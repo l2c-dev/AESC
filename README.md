@@ -102,7 +102,7 @@ Todos os scripts usam caminhos relativos, garantindo portabilidade entre diferen
 3. Edite seu arquivo `~/.bashrc` e adicione um **alias** para facilitar:  
 
    ```bash
-   alias aesc='/mnt/dados/l2c/src/aesc.sh'
+   alias aesc='/src/aesc.sh'
    ```
 
    > Ajuste o caminho conforme o local onde você instalou o AESC.
