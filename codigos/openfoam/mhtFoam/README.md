@@ -6,17 +6,17 @@ OpenFOAM based solver for simulating the temperature field of a biological tissu
 
 The governing equations solved by **mhtFoam** are given by:
 
-<div class="figure-center"> <img src="../../figs/mhteq1.png" width="460" height="140" /> </div> 
+<div class="figure-center"> <img src="https://github.com/lcec-unb/fhdFoam/blob/main/figs/mhteq1.png" width="460" height="140" /> </div> 
 
 where $\rho$, $c$ and $k$ denote the local values of density, specific heat and thermal conductivity of the biological tissues involved respectively, $\rho_b$, $c_b$, $\omega_b$ and $T_b$ represent density, specific heat, perfusion rate and arterial temperature of the blood, $T(\vec{x},t)$ and $\Phi (\vec{x},t)$ represent temperature and normalized particle concentration fields, $\dot{Q}_m$ is the metabolic heat generation rate of the biological tissue, $\mu_0 = 4 \pi \times 10^{-7} H/m$ is the magnetic permeability of the free space, $H_0$ is the mean value of the applied field, $f$ is the frequency of the time-dependent field in Hz, $\mathcal{D}$ is a calibrated diffusion-like coefficient that accounts for the time the initial ferrofluid mass takes do spread around the surrounding tissues and finally $\chi^{''}$ is a dynamical property of the ferrofluid namely the imaginary part of the complex susceptibility. For details regarding the mathematical formulation used in the development of **mhtFoam** please consult Refs [1,2]
 
 The blood perfusion rate is estimated according to the kind of biological tissue. For the tumour tissue, we have:
 
-<div class="figure-center"> <img src="../../figs/mhteq2.png" width="450" height="150" /> </div> 
+<div class="figure-center"> <img src="https://github.com/lcec-unb/fhdFoam/blob/main/figs/mhteq2.png" width="450" height="150" /> </div> 
 
 for the healthy tissue we have
 
-<div class="figure-center"> <img src="../../figs/mhteq3.png" width="450" height="110" /> </div> 
+<div class="figure-center"> <img src="https://github.com/lcec-unb/fhdFoam/blob/main/figs/mhteq3.png" width="450" height="110" /> </div> 
 
 These equations were proposed by Ref [3].
 
@@ -24,7 +24,7 @@ These equations were proposed by Ref [3].
 
 In order to validate this solver we consider the experimental database of Salloum et al [4]. In this work the authors perform an *in-vivo* experimental study of the heating process of a mouse subjected to magnetic hyperthermia. Since we propose a time-dependent diffusion-like equation to emulate the process of ferrofluid spreading through the biological tissues, we must calibrate the values of this ad-hoc constant $\mathcal{D}$. In **mhtFoam** This constant is calibrated in order to provide a typical spreading time compatible with the time-dependent behavior of the temperature availed at the center of a spherical tumour according to the experimental data of Salloum et al.[4]. Bellow we present a comparison between the experimental data of Salloum et al.[4] with the numerical prediction provided by **mhtFoam**
 
-<div class="figure-center"> <img src="../../figs/mhtFoam_validation.png" width="350" height="300" /> </div> 
+<div class="figure-center"> <img src="https://github.com/lcec-unb/fhdFoam/blob/main/figs/mhtFoam_validation.png" width="350" height="300" /> </div> 
 
 ## References
 
