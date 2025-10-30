@@ -11,8 +11,8 @@ echo "║         🧪 AESC v1.0 | Ambiente de Execução de Simulações Cient�
 echo "║               💻 Laboratório Pessoal de Computação Científica                ║"
 echo "║                 Desenvolvido por Prof. Rafael Gabler Gontijo                 ║"
 echo "╠══════════════════════════════════════════════════════════════════════════════╣"
-echo "║ Este menu permite acessar diferentes ambientes de simulação disponíveis no   ║"
-echo "║ servidor da L2C. Use os números para navegar.                                ║"
+echo "║  Este menu permite acessar diferentes ambientes de simulação computacional   ║"
+echo "║                       Use os números para navegar.                           ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 
 while true; do

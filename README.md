@@ -89,7 +89,7 @@ Todos os scripts usam caminhos relativos, garantindo portabilidade entre diferen
 1. Clone este repositório para a sua máquina:  
 
    ```bash
-   git clone https://github.com/seuusuario/AESC.git
+   git clone https://github.com/l2c-dev/AESC.git
    ```
 
 2. Acesse o diretório e dê permissão de execução:  
