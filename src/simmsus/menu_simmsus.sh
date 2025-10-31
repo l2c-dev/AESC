@@ -41,7 +41,11 @@ while true; do
     4) bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
     5) bash "$SCRIPT_DIR/monitorar_simulacao.sh" ;;
     6) bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
-    0) bash "$ROOT_DIR/aesc.sh"; exit ;;
+    0)
+    echo "🔙 Voltando ao menu principal..."
+    sleep 0.4
+    break
+    ;;
   esac
 
   echo ""

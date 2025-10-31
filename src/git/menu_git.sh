@@ -31,7 +31,11 @@ while true; do
     2) bash "$SCRIPT_DIR/iniciar_projeto.sh" ;;
     3) bash "$SCRIPT_DIR/gerar_readme.sh" ;;
     4) bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
-    0) bash "$ROOT_DIR/aesc.sh"; exit 0 ;;
+    0) 
+       echo "🔙 Voltando ao menu principal..."
+       sleep 0.4
+       break
+       ;;
     *) echo "❌ Opção inválida. Tente novamente." ;;
   esac
 
@@ -39,3 +43,4 @@ while true; do
   read -p "Pressione ENTER para retornar ao menu Git..."
   clear
 done
+exit 0

@@ -4,8 +4,8 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-clear
-
+print_header() {
+echo ""
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
 echo "║         🧪 AESC v1.0 | Ambiente de Execução de Simulações Científicas        ║"
 echo "║               💻 Laboratório Pessoal de Computação Científica                ║"
@@ -14,8 +14,11 @@ echo "╠═══════════════════════�
 echo "║  Este menu permite acessar diferentes ambientes de simulação computacional   ║"
 echo "║                       Use os números para navegar.                           ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+}
 
 while true; do
+    clear
+    print_header
     echo ""
     echo "🌐 Ambientes disponíveis:"
     echo ""
@@ -58,6 +61,9 @@ while true; do
 
         6)
             echo "🔧 Ambiente LIGGGHTS ainda não implementado..."
+            sleep 1
+            echo "🔙 Voltando ao menu principal..."
+            sleep 0.6
             ;;
         7)
             bash "$SCRIPT_DIR/git/menu_git.sh"

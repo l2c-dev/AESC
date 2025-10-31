@@ -50,7 +50,9 @@ case $opcao in
     bash "$BASE_DIR/openfoam/limpar_caso.sh"
     ;;
   6)
-    bash "$BASE_DIR/aesc.sh"
+    echo "🔙 Voltando ao menu principal..."
+    sleep 0.4
+    break
     ;;
   *)
     echo "Opção inválida. Retornando ao menu principal..."

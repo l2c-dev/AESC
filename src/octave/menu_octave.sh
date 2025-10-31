@@ -25,8 +25,12 @@ while true; do
   case "$opcao" in
     1) bash "$SCRIPT_DIR/executar_codigo.sh" ;;
     2) bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
-    0) bash "$ROOT_DIR/aesc.sh"; exit 0 ;;
-    *) echo "❌ Opção inválida. Tente novamente." ;;
+    0)
+    echo "🔙 Voltando ao menu principal..."
+    sleep 0.4
+    break
+    ;;
+   *) echo "❌ Opção inválida. Tente novamente." ;;
   esac
 
   echo ""
