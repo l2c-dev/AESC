@@ -1,9 +1,17 @@
 #!/bin/bash
 
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
 # Diretório em que esse script se encontra
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Diretório raiz dos scripts do sistema AESC
+# Diretório raiz (se precisar no futuro)
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 imprimir_cabecalho() {
@@ -34,21 +42,22 @@ while true; do
   echo ""
   read -p "Digite a opção desejada: " opcao
 
-  case $opcao in
-    1) bash "$SCRIPT_DIR/compilar_codigo.sh" ;;
-    2) bash "$SCRIPT_DIR/gerar_simconfig.sh" ;;
-    3) bash "$SCRIPT_DIR/executar_simulacao.sh" ;;
-    4) bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
-    5) bash "$SCRIPT_DIR/monitorar_simulacao.sh" ;;
-    6) bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
+  case "$opcao" in
+    1) exec bash "$SCRIPT_DIR/compilar_codigo.sh" ;;
+    2) exec bash "$SCRIPT_DIR/gerar_simconfig.sh" ;;
+    3) exec bash "$SCRIPT_DIR/executar_simulacao.sh" ;;
+    4) exec bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
+    5) exec bash "$SCRIPT_DIR/monitorar_simulacao.sh" ;;
+    6) exec bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
     0)
-    echo "🔙 Voltando ao menu principal..."
-    sleep 0.4
-    break
-    ;;
+      echo "🔙 Voltando ao menu principal..."
+      sleep 0.3
+      exit 0
+      ;;
+    *)
+      echo "❌ Opção inválida."
+      sleep 0.8
+      imprimir_cabecalho
+      ;;
   esac
-
-  echo ""
-  read -p "Pressione ENTER para retornar ao menu SIMMSUS..."
-  imprimir_cabecalho
 done

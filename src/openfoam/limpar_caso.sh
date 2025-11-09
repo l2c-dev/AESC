@@ -1,10 +1,4 @@
 #!/bin/bash
-# Limpeza de simulações OpenFOAM (AESC) – caminhos relativos
-
-# Diretórios base relativos à localização deste script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"         # .../AESC/src/openfoam
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"                                # .../AESC/src
-OPENFOAM_SIM_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/openfoam")"
 
 clear
 echo ""
@@ -13,86 +7,123 @@ echo "║         🧪 AESC v1.0 | Ambiente de Execução de Simulações Cient�
 echo "║               💻 Laboratório Pessoal de Computação Científica                ║"
 echo "║                 Desenvolvido por Prof. Rafael Gabler Gontijo                 ║"
 echo "╠══════════════════════════════════════════════════════════════════════════════╣"
-echo "║        Ambiente de execução – OpenFOAM 🌀 | Limpeza de simulações            ║"
+echo "║              Ambiente de execução – OpenFOAM 🌀 | Limpar Caso                ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Verificar diretório de simulações
-if [[ ! -d "$OPENFOAM_SIM_DIR" ]]; then
-  echo "❌ Diretório de simulações OpenFOAM não encontrado:"
-  echo "   $OPENFOAM_SIM_DIR"
-  read -p "Pressione Enter para retornar ao menu..."
-  bash "$SCRIPT_DIR/menu_openfoam.sh"
-  exit 1
-fi
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env
 
-# 📂 Listar solvers disponíveis
-echo "📂 Solvers com casos disponíveis para limpeza:"
-( cd "$OPENFOAM_SIM_DIR" && ls -1 )
-echo ""
-read -p "✍️  Digite o nome do solver cujo caso deseja limpar: " SOLVER
-
-# 📁 Listar casos disponíveis para o solver
-SOLVER_DIR="$OPENFOAM_SIM_DIR/$SOLVER"
-if [[ ! -d "$SOLVER_DIR" ]]; then
-  echo "❌ Solver '$SOLVER' não encontrado em: $OPENFOAM_SIM_DIR"
-  read -p "Pressione Enter para retornar ao menu..."
-  bash "$SCRIPT_DIR/menu_openfoam.sh"
-  exit 1
-fi
-
-echo ""
-echo "📁 Casos disponíveis para limpeza no solver '$SOLVER':"
-( cd "$SOLVER_DIR" && ls -1 )
-echo ""
-read -p "✍️  Digite o nome do caso que deseja limpar: " CASO
-
-DIR="$SOLVER_DIR/$CASO"
-
-if [[ ! -d "$DIR" ]]; then
-  echo "❌ Caso '$CASO' não encontrado em: $SOLVER_DIR"
-  read -p "Pressione Enter para retornar ao menu..."
-  bash "$SCRIPT_DIR/menu_openfoam.sh"
-  exit 1
-fi
-
-# Detectar script de limpeza local
-CLEAN_SH=""
-if   [[ -f "$DIR/Allclean.sh" ]]; then CLEAN_SH="Allclean.sh"
-elif [[ -f "$DIR/Allclean"    ]]; then CLEAN_SH="Allclean"
-fi
-
-# 📦 Obter lista de pastas de tempo (ignora '0', 'constant' etc.)
-TEMPOS=$(find "$DIR" -maxdepth 1 -type d -regex '.*/[0-9]+(\.[0-9]+)?$' -printf '%f\n' 2>/dev/null)
-IFS=$'\n' read -rd '' -a PASTAS <<<"$TEMPOS"
-TOTAL=${#PASTAS[@]}
-
-if [ "$TOTAL" -eq 0 ]; then
-  echo "⚠️  Nenhuma pasta de tempo encontrada para apagar. Executando rotina de limpeza mesmo assim..."
+# ─────────────────────────── Diretório de simulações ───────────────────────────
+if [ -n "${AESC_SIMS_DIR:-}" ] && [ -d "$AESC_SIMS_DIR/openfoam" ]; then
+  SIMS_DIR="$AESC_SIMS_DIR/openfoam"
 else
-  echo ""
-  echo "🧹 Limpando $TOTAL pastas temporais do caso '$CASO'..."
-  COUNT=0
-  for PASTA in "${PASTAS[@]}"; do
-    rm -rf "$DIR/$PASTA"
-    COUNT=$((COUNT+1))
-    PERC=$((100 * COUNT / TOTAL))
-    echo -ne "⏳ Progresso: $PERC% concluído...\r"
-    sleep 0.1
+  SCRIPT_PATH="$(readlink -f "$0")"
+  BASE_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_PATH")")")"
+  if [ -d "$BASE_DIR/simulations/openfoam" ]; then
+    SIMS_DIR="$BASE_DIR/simulations/openfoam"
+  else
+    SIMS_DIR="$BASE_DIR/simulacoes/openfoam"
+  fi
+fi
+
+if [ ! -d "$SIMS_DIR" ]; then
+  echo "❌ Pasta de simulações do OpenFOAM não encontrada em: $SIMS_DIR"
+  sleep 2; exit 1
+fi
+
+# ─────────────────────────── Seleção do solver ─────────────────────────────────
+echo "📦 Solvers com casos existentes:"
+echo "---------------------------------"
+solvers=()
+while IFS= read -r -d '' d; do
+  s="$(basename "$d")"; solvers+=("$s")
+done < <(find "$SIMS_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+
+if [ "${#solvers[@]}" -eq 0 ]; then
+  echo "ℹ️  Nenhum solver encontrado em: $SIMS_DIR"
+  sleep 2; exit 0
+fi
+
+for i in "${!solvers[@]}"; do printf " [%d] %s\n" "$((i+1))" "${solvers[$i]}"; done
+echo "---------------------------------"
+read -r -p "Escolha o solver (número): " idx; idx=$((idx-1))
+if [ "$idx" -lt 0 ] || [ "$idx" -ge "${#solvers[@]}" ]; then
+  echo "❌ Opção inválida."; sleep 2; exit 1
+fi
+solver="${solvers[$idx]}"
+
+# ─────────────────────────── Seleção do caso ───────────────────────────────────
+CASE_ROOT="$SIMS_DIR/$solver"
+echo ""
+echo "📁 Casos do solver '$solver':"
+echo "---------------------------------"
+cases=()
+while IFS= read -r -d '' d; do
+  c="$(basename "$d")"; cases+=("$c")
+done < <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+
+if [ "${#cases[@]}" -eq 0 ]; then
+  echo "ℹ️  Nenhum caso encontrado em: $CASE_ROOT"
+  sleep 2; exit 0
+fi
+
+for i in "${!cases[@]}"; do printf " [%d] %s\n" "$((i+1))" "${cases[$i]}"; done
+echo "---------------------------------"
+read -r -p "Escolha o caso (número): " jdx; jdx=$((jdx-1))
+if [ "$jdx" -lt 0 ] || [ "$jdx" -ge "${#cases[@]}" ]; then
+  echo "❌ Opção inválida."; sleep 2; exit 1
+fi
+case_name="${cases[$jdx]}"
+CASE_DIR="$CASE_ROOT/$case_name"
+
+cd "$CASE_DIR" || { echo "❌ Falha ao entrar em $CASE_DIR"; sleep 2; exit 1; }
+
+echo ""
+echo "⚠️  Será realizada a limpeza de artefatos numéricos:"
+echo "    • diretórios de tempo numéricos (exceto '0' e '0.orig' se existirem)"
+echo "    • diretórios 'processor*' (decomposição paralela)"
+echo "    • diretório 'postProcessing/'"
+echo "    • arquivos de log: log.*, log.pre"
+echo ""
+read -r -p "Confirmar limpeza em '$CASE_DIR'? [s/N]: " resp; resp="${resp,,}"
+if [[ "$resp" != "s" && "$resp" != "sim" && "$resp" != "y" && "$resp" != "yes" ]]; then
+  echo "↩️  Operação cancelada."; sleep 1
+else
+  # ───────── Substituição da limpeza: agora 100% Bash, sem find -regex ─────────
+  shopt -s nullglob
+
+  # Remove tempos numéricos (1, 2, 3, 10, 11, 0.1, 0.01, 12.5, etc.), mantendo 0 e 0.orig
+  for d in *; do
+    if [[ -d "$d" && "$d" != "0" && "$d" != "0.orig" && "$d" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+      rm -rf -- "$d"
+    fi
   done
-  echo -ne "\n"
+
+  # Remove processor*
+  rm -rf -- processor* 2>/dev/null || true
+
+  # Remove pós-processamento
+  rm -rf -- postProcessing 2>/dev/null || true
+
+  # Remove logs
+  rm -f -- log.* log.pre 2>/dev/null || true
+
+  shopt -u nullglob
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  echo "✅ Limpeza concluída em: $CASE_DIR"
 fi
 
 echo ""
-echo "⚙️  Executando rotina de limpeza do caso (Allclean)..."
-if [[ -n "$CLEAN_SH" ]]; then
-  ( cd "$DIR" && bash "$CLEAN_SH" )
+read -r -p "Pressione ENTER para voltar ao menu do OpenFOAM..." _
+if [ -n "${AESC_ROOT:-}" ] && [ -f "$AESC_ROOT/src/openfoam/menu_openfoam.sh" ]; then
+  bash "$AESC_ROOT/src/openfoam/menu_openfoam.sh"
 else
-  echo "⚠️  Script de limpeza (Allclean/Allclean.sh) não encontrado em:"
-  echo "   $DIR"
+  bash "$BASE_DIR/src/openfoam/menu_openfoam.sh"
 fi
-
-echo ""
-echo "✅ Limpeza do caso '$CASO' concluída com sucesso!"
-read -p "Pressione Enter para retornar ao menu OpenFOAM..."
-bash "$SCRIPT_DIR/menu_openfoam.sh"

@@ -1,10 +1,29 @@
 #!/bin/bash
 
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
 # Diretórios relativos
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-COD_DIR="$(readlink -f "$ROOT_DIR/../codigos/pinn")"
-SIM_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/pinn")"
+
+# ─────────────────────────── Caminhos via env.sh (com fallbacks) ───────────────
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+CODES_BASE="${AESC_CODES_DIR:-$AESC_ROOT/codes}"
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+
+COD_DIR="$CODES_BASE/pinn"
+SIM_DIR="$SIMS_BASE/pinn"
+
+# Python/venv
+PY_CMD="${AESC_PY_CMD:-python3}"
+PINN_VENV="${AESC_PINN_VENV:-$HOME/venvs/pinn}"
 
 clear
 echo ""
@@ -20,19 +39,21 @@ echo ""
 # Checagens básicas
 if [[ ! -d "$COD_DIR" ]]; then
   echo "❌ Diretório de códigos PINN não encontrado: $COD_DIR"
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 if [[ ! -d "$SIM_DIR" ]]; then
   echo "❌ Diretório de simulações PINN não encontrado: $SIM_DIR"
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-# Ativa o venv do PINN
-if [[ -f "$HOME/venvs/pinn/bin/activate" ]]; then
+# Ativa o venv do PINN (se existir)
+if [[ -f "$PINN_VENV/bin/activate" ]]; then
   # shellcheck disable=SC1091
-  source "$HOME/venvs/pinn/bin/activate"
+  source "$PINN_VENV/bin/activate"
 else
-  echo "⚠️  Ambiente virtual não encontrado em: $HOME/venvs/pinn"
+  echo "⚠️  Ambiente virtual não encontrado em: $PINN_VENV"
   echo "    Prosseguindo com Python do sistema (pode falhar se pacotes não estiverem instalados)."
 fi
 
@@ -40,43 +61,47 @@ fi
 mapfile -t SCRIPTS < <(cd "$COD_DIR" && find . -maxdepth 1 -type f -name "*.py" -printf "%f\n" | sort)
 if [[ ${#SCRIPTS[@]} -eq 0 ]]; then
   echo "⚠️ Nenhum script .py encontrado em $COD_DIR"
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 echo "📜 Scripts disponíveis em $(basename "$COD_DIR"):"
 for s in "${SCRIPTS[@]}"; do echo "  - ${s%.py}"; done
 echo ""
-read -p "Digite o nome do código (sem .py): " nome
+read -r -p "Digite o nome do código (sem .py): " nome
 
 if [[ -z "$nome" ]]; then
   echo "❌ Nome vazio."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 ALVO="$COD_DIR/$nome.py"
 if [[ ! -f "$ALVO" ]]; then
   echo "❌ Script não encontrado: $ALVO"
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 # Snapshot de diretórios ANTES (dentro de COD_DIR)
-cd "$COD_DIR" || { echo "❌ Falha ao acessar $COD_DIR"; read -p "ENTER..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1; }
+cd "$COD_DIR" || { echo "❌ Falha ao acessar $COD_DIR"; read -r -p "ENTER..."; exec bash "$SCRIPT_DIR/menu_pinn.sh"; }
 mapfile -t DIRS_BEFORE < <(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" ! -name "__pycache__" -printf "%P\n" | sort)
 
 echo ""
-echo "🚀 Executando: python $(basename "$ALVO")"
+echo "🚀 Executando: $PY_CMD $(basename "$ALVO")"
 echo "   (aguarde a finalização do código; logs/prints são do script Python)"
 echo ""
 
 # Execução síncrona
-python "$ALVO"
+"$PY_CMD" "$ALVO"
 PY_STATUS=$?
 
 echo ""
 if [[ $PY_STATUS -ne 0 ]]; then
   echo "❌ Execução retornou código de erro ($PY_STATUS)."
   echo "   Verifique a saída acima e eventuais logs gerados pelo script."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 # Snapshot de diretórios DEPOIS (dentro de COD_DIR)
@@ -103,10 +128,11 @@ fi
 
 if [[ -z "$TARGET_DIR" || ! -d "$TARGET_DIR" ]]; then
   echo "⚠️ Não foi possível identificar a pasta de saída criada pelo script."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-# Move a pasta para simulacoes/pinn
+# Move a pasta para simulations/pinn
 SRC_ABS="$COD_DIR/$TARGET_DIR"
 DEST_ABS="$SIM_DIR/$(basename "$TARGET_DIR")"
 if [[ -e "$DEST_ABS" ]]; then
@@ -123,5 +149,5 @@ echo ""
 echo "✅ Execução concluída e saída organizada."
 echo "📁 Pasta da simulação: $DEST_ABS"
 echo ""
-read -p "Pressione ENTER para retornar ao menu PINN..."
-bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+read -r -p "Pressione ENTER para retornar ao menu PINN..."
+exec bash "$SCRIPT_DIR/menu_pinn.sh"

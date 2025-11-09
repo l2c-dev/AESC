@@ -1,9 +1,25 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SIMULACOES_DIR="$ROOT_DIR/../simulacoes/simmsus"
-EXECUTAVEL_ORIGEM="$ROOT_DIR/../codigos/simmsus/simmsus.ex"
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Caminho do script (usado para voltar ao menu no final)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# ─────────────────────────── Caminhos via env.sh (com fallback) ────────────────
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+SIMULACOES_DIR="$SIMS_BASE/simmsus"
+
+CODES_BASE="${AESC_CODES_DIR:-$AESC_ROOT/codes}"
+EXECUTAVEL_ORIGEM="$CODES_BASE/simmsus/simmsus.ex"
 
 clear
 echo ""
@@ -32,7 +48,6 @@ fi
 
 echo "📁 Casos disponíveis para execução:"
 echo ""
-
 for i in "${!PASTAS[@]}"; do
   echo " [$i] ${PASTAS[$i]}"
 done

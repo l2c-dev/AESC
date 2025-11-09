@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
 while true; do
   clear
   echo ""
@@ -67,8 +76,8 @@ while true; do
   read -p "Digite o número do processo que deseja monitorar ou '0' para voltar: " choice
 
   if [[ "$choice" == "0" ]]; then
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  bash "$SCRIPT_DIR/menu_openfoam.sh"
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    bash "$SCRIPT_DIR/menu_openfoam.sh"
     exit 0
   fi
 

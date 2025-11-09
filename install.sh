@@ -16,11 +16,20 @@ echo "╠═══════════════════════�
 echo "║  Este script vai:                                                            ║"
 echo "║   • Instalar pacotes básicos (git, build-essential, python3-venv, etc.)      ║"
 echo "║   • (Opcional) Instalar Octave                                               ║"
-echo "║   • Criar pastas necessárias (codigos/, simulacoes/...)                      ║"
+echo "║   • Criar pastas necessárias (codes/, simulations/...)                        ║"
 echo "║   • (Opcional) Criar venvs: python-sci e pinn                                ║"
 echo "║   • Tornar todos os *.sh em src/ executáveis                                 ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
+
+### AESC: BEGIN root detection (safe to re-run)
+if [ -z "${AESC_ROOT:-}" ]; then
+  _AESC_INSTALL_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  export AESC_ROOT="$_AESC_INSTALL_DIR"
+  unset _AESC_INSTALL_DIR
+fi
+### AESC: END root detection
+
 
 # ───────────────────────────── Utilitários ─────────────────────────────────────
 confirm() { # confirm "Pergunta?" -> 0=sim, 1=não
@@ -93,20 +102,68 @@ else
   echo "⏭️  Pulando tentativa automática de instalação do OpenFOAM."
 fi
 
+# ───────────────────────────── etc/env.sh (provisioning) ───────────────────────
+# Cria etc/env.sh com valores padrão (não sobrescreve se já existir)
+echo ""
+echo "⚙️  Preparando arquivo de configuração global (etc/env.sh)..."
+mkdir -p "$ROOT_DIR/etc"
+if [ ! -f "$ROOT_DIR/etc/env.sh" ]; then
+  cat > "$ROOT_DIR/etc/env.sh" <<'EOF'
+# =========================
+# AESC - Configuração global
+# =========================
+
+# Raiz do projeto (auto-detect se não vier de fora)
+if [ -z "${AESC_ROOT:-}" ]; then
+  _AESC_ENV_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  export AESC_ROOT="$(cd "$_AESC_ENV_DIR/.." && pwd)"
+  unset _AESC_ENV_DIR
+fi
+
+# --- nomes de pastas (padrão em inglês) ---
+export AESC_CODES_NAME="${AESC_CODES_NAME:-codes}"
+export AESC_SIMS_NAME="${AESC_SIMS_NAME:-simulations}"
+
+# Diretórios canônicos
+export AESC_CODES_DIR="${AESC_CODES_DIR:-$AESC_ROOT/$AESC_CODES_NAME}"
+export AESC_SIMS_DIR="${AESC_SIMS_DIR:-$AESC_ROOT/$AESC_SIMS_NAME}"
+
+# --- OpenFOAM ---
+# ajuste aqui se usar outra versão/caminho
+# (valor padrão compatível com os scripts atuais do projeto)
+export AESC_OPENFOAM_BASHRC="${AESC_OPENFOAM_BASHRC:-/usr/lib/openfoam/openfoam2412/etc/bashrc}"
+
+# --- Python (científico) ---
+export AESC_PY_SCI_VENV="${AESC_PY_SCI_VENV:-$HOME/venvs/python-sci}"
+export AESC_PY_CMD="${AESC_PY_CMD:-python3}"
+
+# --- Conveniências ---
+# Pasta de logs opcional (não usado pelos scripts atuais; reservado)
+export AESC_LOGS_DIR="${AESC_LOGS_DIR:-$AESC_ROOT/logs}"
+EOF
+  echo "✅ etc/env.sh criado (padrões em inglês: codes/ e simulations/)."
+else
+  echo "ℹ️  etc/env.sh já existe — mantendo como está."
+fi
+
 # ───────────────────────────── Estrutura de diretórios ─────────────────────────
 echo ""
 echo "📁 Criando estrutura de diretórios do AESC..."
-mkdir -p "$ROOT_DIR/codigos"/{openfoam,simmsus,pinn,python,octave}
-mkdir -p "$ROOT_DIR/simulacoes"/{openfoam,simmsus,pinn,python,octave,liggghts}
+mkdir -p "$ROOT_DIR/codes"/{openfoam,simmsus,pinn,python,octave}
+mkdir -p "$ROOT_DIR/simulations"/{openfoam,simmsus,pinn,python,octave,liggghts}
 mkdir -p "$ROOT_DIR/src"/{openfoam,simmsus,pinn,python,octave,git}
 
+# Compatibilidade com nomes anteriores em pt-BR (aliases)
+[ -e "$ROOT_DIR/codigos" ]    || ln -s "codes"       "$ROOT_DIR/codigos"
+[ -e "$ROOT_DIR/simulacoes" ] || ln -s "simulations" "$ROOT_DIR/simulacoes"
+
 # Exemplos mínimos (mantém estrutura mesmo vazia)
-touch "$ROOT_DIR/simulacoes/openfoam/.keep"
-touch "$ROOT_DIR/simulacoes/simmsus/.keep"
-touch "$ROOT_DIR/simulacoes/pinn/.keep"
-touch "$ROOT_DIR/simulacoes/python/.keep"
-touch "$ROOT_DIR/simulacoes/octave/.keep"
-touch "$ROOT_DIR/simulacoes/liggghts/.keep"
+touch "$ROOT_DIR/simulations/openfoam/.keep"
+touch "$ROOT_DIR/simulations/simmsus/.keep"
+touch "$ROOT_DIR/simulations/pinn/.keep"
+touch "$ROOT_DIR/simulations/python/.keep"
+touch "$ROOT_DIR/simulations/octave/.keep"
+touch "$ROOT_DIR/simulations/liggghts/.keep"
 
 echo "✅ Estrutura criada."
 

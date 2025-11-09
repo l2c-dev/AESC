@@ -1,9 +1,29 @@
 #!/bin/bash
 
-# Diretórios base (independente de onde for chamado)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AESC_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"                 # .../aesc
-CODIGO_DIR="$AESC_ROOT/codigos/simmsus"                     # .../aesc/codigos/simmsus
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────── Caminhos (via env.sh, com fallback) ───────────────
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+CODES_DIR="${AESC_CODES_DIR:-$AESC_ROOT/codigos}"
+CODIGO_DIR="$CODES_DIR/simmsus"
+
+# Prefixo para `git subtree pull` (compat: codes/ ou codigos/)
+if [ -n "${AESC_CODES_NAME:-}" ]; then
+  SUBTREE_PREFIX="${AESC_CODES_NAME}/simmsus"
+else
+  if [ -d "$AESC_ROOT/codes" ]; then
+    SUBTREE_PREFIX="codes/simmsus"
+  else
+    SUBTREE_PREFIX="codigos/simmsus"
+  fi
+fi
 
 clear
 echo ""
@@ -28,14 +48,13 @@ fi
 
 # ───────────────────────────────── Obter/atualizar fontes
 if [ -d "$CODIGO_DIR/.git" ]; then
-  echo "🔄 Repositório Git detectado em codigos/simmsus. Executando git pull..."
+  echo "🔄 Repositório Git detectado em: $CODIGO_DIR. Executando git pull..."
   git -C "$CODIGO_DIR" pull --rebase --autostash origin main || { echo "❌ git pull falhou."; exit 1; }
 else
   # Snapshot (sem .git). Tentar 'git subtree pull' no repositório raiz do AESC
   if git -C "$AESC_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "🌿 Snapshot detectado. Atualizando via git subtree no repositório AESC..."
-    # Usa URL remota; --squash mantém histórico compacto.
-    git -C "$AESC_ROOT" subtree pull --prefix=codigos/simmsus https://github.com/lcec-unb/simmsus.git main --squash \
+    git -C "$AESC_ROOT" subtree pull --prefix="$SUBTREE_PREFIX" https://github.com/lcec-unb/simmsus.git main --squash \
       || {
         echo "⚠️  'git subtree pull' falhou."
         read -r -p "❔ Deseja substituir por um clone direto do SIMMSUS? [s/N]: " RESP
@@ -72,12 +91,10 @@ fi
 
 # ───────────────────────────────── Determinar diretório de build (novo x antigo)
 has_makefile() {
-  # retorna 0 (true) se existir Makefile/makefile/GNUmakefile no diretório passado
   local d="$1"
   [ -f "$d/Makefile" ] || [ -f "$d/makefile" ] || [ -f "$d/GNUmakefile" ]
 }
 
-# ───────────────────────────────── Determinar diretório de build (novo x antigo)
 BUILD_DIR=""
 if [ -d "$CODIGO_DIR/src" ] && has_makefile "$CODIGO_DIR/src"; then
   BUILD_DIR="$CODIGO_DIR/src"
@@ -90,6 +107,7 @@ else
   echo "   Verifique a estrutura do repositório."
   exit 1
 fi
+
 # ───────────────────────────────── Escolha do compilador
 USE_IFX=false
 if command -v ifx >/dev/null 2>&1; then
@@ -115,11 +133,11 @@ echo ""
 cd "$BUILD_DIR" || exit 1
 if $USE_IFX; then
   echo "🛠️ Compilando com IFX..."
-  make ifx  &>>  ../log.compilacao.ifx
-   COMP_LOG="../log.compilacao.ifx"
+  make ifx &>> ../log.compilacao.ifx
+  COMP_LOG="../log.compilacao.ifx"
 else
   echo "🛠️ Compilando com GFORTRAN..."
-  make gfortran  &>> ../log.compilacao.gfortran
+  make gfortran &>> ../log.compilacao.gfortran
   COMP_LOG="../log.compilacao.gfortran"
 fi
 
@@ -142,13 +160,13 @@ else
 fi
 
 # 3. Executar limpeza automática da pasta de build
-if [ -f "$BUILD_DIR/Makefile" ] || [ -f "$BUILD_DIR/makefile" ]; then
+if [ -f "$BUILD_DIR/Makefile" ] || [ -f "$BUILD_DIR/makefile" ] || [ -f "$BUILD_DIR/GNUmakefile" ]; then
   echo "🧹 Limpando arquivos temporários (make clean)..."
   (cd "$BUILD_DIR" && make clean > /dev/null 2>&1)
 fi
 
 # 4. Remover backups antigos de snapshot, se existirem
-BACKUPS=$(find "$AESC_ROOT/codigos" -maxdepth 1 -type d -name "simmsus_snapshot_backup_*" 2>/dev/null)
+BACKUPS=$(find "$CODES_DIR" -maxdepth 1 -type d -name "simmsus_snapshot_backup_*" 2>/dev/null)
 if [ -n "$BACKUPS" ]; then
   echo "🧽 Removendo backups temporários antigos..."
   for BK in $BACKUPS; do
@@ -167,4 +185,3 @@ else
   echo "❌ A compilação não gerou o executável esperado (simmsus.ex)."
   echo "ℹ️  Consulte o log: $COMP_LOG"
 fi
-

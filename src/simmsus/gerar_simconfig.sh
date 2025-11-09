@@ -1,11 +1,28 @@
 #!/bin/bash
 
-# Caminhos relativos (portabilidade AESC)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SIM_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/simmsus")"
-GEN_DIR="$(readlink -f "$ROOT_DIR/../codigos/simmsus")"
-GEN="$GEN_DIR/simconfig_generator.sh"   # gerador na raiz do código Simmsus
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Caminho do script (usado só para voltar ao menu no final)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# ─────────────────────────── Caminhos via env.sh (com fallback) ────────────────
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+
+# diretório de simulações do SIMMSUS
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+SIM_DIR="$SIMS_BASE/simmsus"
+
+# diretório de códigos do SIMMSUS
+CODES_BASE="${AESC_CODES_DIR:-$AESC_ROOT/codes}"
+GEN_DIR="$CODES_BASE/simmsus"
+GEN="$GEN_DIR/src/simconfig_generator.sh"   # gerador na raiz do código SIMMSUS
 
 clear
 echo ""
@@ -21,7 +38,7 @@ echo ""
 # Verificações necessárias
 if [[ ! -d "$SIM_DIR" ]]; then
   echo "❌ Diretório de simulações não encontrado: $SIM_DIR"
-  echo "   Verifique a instalação do AESC (simulacoes/simmsus)."
+  echo "   Verifique a instalação do AESC (simulations/simmsus)."
   echo ""
   read -p "Pressione ENTER para retornar ao menu Simmsus..."
   bash "$SCRIPT_DIR/menu_simmsus.sh"; exit 1
@@ -29,7 +46,7 @@ fi
 
 if [[ ! -f "$GEN" ]]; then
   echo "❌ Gerador não encontrado: $GEN"
-  echo "   Coloque 'simconfig_generator.sh' na raiz de 'codigos/simmsus/'."
+  echo "   Coloque 'simconfig_generator.sh' na raiz de '$CODES_BASE/simmsus/'."
   echo ""
   read -p "Pressione ENTER para retornar ao menu Simmsus..."
   bash "$SCRIPT_DIR/menu_simmsus.sh"; exit 1
@@ -74,9 +91,6 @@ if [[ ! -s "$CONFIG" ]]; then
 fi
 
 # --------- Parsing do simconfig.dat para montar o nome da pasta ---------
-#get_bool(){ awk -F':' -v k="$1" 'index($0,k)==1{gsub(/[[:space:]]/,"",$2); print toupper($2)}' "$CONFIG" | head -n1; }
-#get_val(){  awk -F':' -v k="$1" 'index($0,k)==1{gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2}' "$CONFIG" | head -n1; }
-
 get_bool(){  # retorna TRUE/FALSE
   awk -F':' -v k="$1" '$0 ~ "^[[:space:]]*"k { gsub(/[[:space:]]/,"",$2); print toupper($2); exit }' "$CONFIG"
 }
@@ -84,7 +98,6 @@ get_bool(){  # retorna TRUE/FALSE
 get_val(){   # retorna string do valor
   awk -F':' -v k="$1" '$0 ~ "^[[:space:]]*"k { gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit }' "$CONFIG"
 }
-
 
 APPLY_FIELD="$(get_bool 'APPLY AN EXTERNAL MAGNETIC FIELD')"
 OSCIL="$(get_bool 'OSCILLATORY FIELD')"

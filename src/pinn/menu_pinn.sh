@@ -1,7 +1,16 @@
 #!/bin/bash
 
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
 # Diretórios relativos
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 clear
@@ -22,20 +31,20 @@ while true; do
   echo " [2] 🧹 Limpar simulação"
   echo " [0] 🔙 Voltar ao menu principal"
   echo ""
-  read -p "Digite a opção desejada: " opcao
+  read -r -p "Digite a opção desejada: " opcao
 
   case "$opcao" in
-    1) bash "$SCRIPT_DIR/executar_codigo.sh" ;;
-    2) bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
+    1) exec bash "$SCRIPT_DIR/executar_codigo.sh" ;;
+    2) exec bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
     0)
-    echo "🔙 Voltando ao menu principal..."
-    sleep 0.4
-    break
-    ;;
-    *) echo "❌ Opção inválida. Tente novamente." ;;
+      echo "🔙 Voltando ao menu principal..."
+      sleep 0.3
+      exit 0
+      ;;
+    *)
+      echo "❌ Opção inválida. Tente novamente."
+      sleep 0.8
+      clear
+      ;;
   esac
-
-  echo ""
-  read -p "Pressione ENTER para retornar ao menu PINN..."
-  clear
 done

@@ -16,3 +16,4 @@ venvs/
 **/.git/         # evita git aninhado por acidente
 .DS_Store
 Thumbs.db
+codes/simmsus

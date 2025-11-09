@@ -1,8 +1,21 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SIMULACOES_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/simmsus")"
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Caminho do script (usado para voltar ao menu)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# ─────────────────────────── Caminhos via env.sh (com fallback) ────────────────
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+SIMULACOES_DIR="$SIMS_BASE/simmsus"
 
 while true; do
 clear
@@ -31,7 +44,7 @@ while read -r linha; do
   pid=$(echo "$linha" | awk '{print $2}')
   exe=$(readlink -f /proc/$pid/exe 2>/dev/null)
 
-# Filtra apenas se for o binário simmsus.ex de verdade
+  # Filtra apenas se for o binário simmsus.ex de verdade
   if [[ "$exe" != *simmsus.ex ]]; then
     continue
   fi
@@ -43,7 +56,6 @@ while read -r linha; do
     ((INDEX++))
   fi
 done < <(ps aux | grep '[s]immsus.ex')
-
 
 if [ ${#MAPA[@]} -eq 0 ]; then
   echo ""
@@ -90,6 +102,7 @@ while true; do
       echo "📄 Últimas 20 linhas de $PASTA/log.simmsus:"
       echo "────────────────────────────────────────────"
       tail -n 20 "$PASTA/log.simmsus"
+      echo ""
       echo "────────────────────────────────────────────"
       echo ""
       read -p "Pressione ENTER para retornar ao monitoramento do processo..."

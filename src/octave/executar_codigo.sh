@@ -1,8 +1,24 @@
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-COD_DIR="$(readlink -f "$ROOT_DIR/../codigos/octave")"
-SIM_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/octave")"
+
+# Caminhos via env.sh (com fallbacks)
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+CODES_BASE="${AESC_CODES_DIR:-$AESC_ROOT/codes}"
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+
+COD_DIR="$CODES_BASE/octave"
+SIM_DIR="$SIMS_BASE/octave"
 
 clear
 echo ""
@@ -17,25 +33,27 @@ echo ""
 
 if [[ ! -d "$COD_DIR" || ! -d "$SIM_DIR" ]]; then
   echo "❌ Estrutura não encontrada."
-  read -p "ENTER para voltar..." ; bash "$SCRIPT_DIR/menu_octave.sh"; exit 1
+  read -r -p "ENTER para voltar..." _
+  exec bash "$SCRIPT_DIR/menu_octave.sh"
 fi
 
 mapfile -t SCRIPTS < <(cd "$COD_DIR" && find . -maxdepth 1 -type f -name "*.m" -printf "%f\n" | sort)
 if [[ ${#SCRIPTS[@]} -eq 0 ]]; then
   echo "⚠️ Nenhum script .m encontrado em $COD_DIR"
-  read -p "ENTER para voltar..." ; bash "$SCRIPT_DIR/menu_octave.sh"; exit 0
+  read -r -p "ENTER para voltar..." _
+  exec bash "$SCRIPT_DIR/menu_octave.sh"
 fi
 
 echo "📜 Scripts disponíveis em $(basename "$COD_DIR"):"
 for s in "${SCRIPTS[@]}"; do echo "  - ${s%.m}"; done
 echo ""
-read -p "Digite o nome do script (sem .m): " nome
-[[ -z "$nome" ]] && { echo "❌ Nome vazio."; read -p "ENTER..."; bash "$SCRIPT_DIR/menu_octave.sh"; exit 1; }
+read -r -p "Digite o nome do script (sem .m): " nome
+[[ -z "$nome" ]] && { echo "❌ Nome vazio."; read -r -p "ENTER..." _; exec bash "$SCRIPT_DIR/menu_octave.sh"; }
 ALVO="$COD_DIR/$nome.m"
-[[ ! -f "$ALVO" ]] && { echo "❌ Script não encontrado: $ALVO"; read -p "ENTER..."; bash "$SCRIPT_DIR/menu_octave.sh"; exit 1; }
+[[ ! -f "$ALVO" ]] && { echo "❌ Script não encontrado: $ALVO"; read -r -p "ENTER..." _; exec bash "$SCRIPT_DIR/menu_octave.sh"; }
 
 # snapshot de dirs antes
-cd "$COD_DIR" || { echo "❌ Falha ao acessar $COD_DIR"; read -p "ENTER..."; bash "$SCRIPT_DIR/menu_octave.sh"; exit 1; }
+cd "$COD_DIR" || { echo "❌ Falha ao acessar $COD_DIR"; read -r -p "ENTER..." _; exec bash "$SCRIPT_DIR/menu_octave.sh"; }
 mapfile -t DIRS_BEFORE < <(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" -printf "%P\n" | sort)
 
 echo ""
@@ -49,7 +67,8 @@ OCT_STATUS=$?
 echo ""
 if [[ $OCT_STATUS -ne 0 ]]; then
   echo "❌ Execução retornou código de erro ($OCT_STATUS)."
-  read -p "ENTER para voltar..." ; bash "$SCRIPT_DIR/menu_octave.sh"; exit 1
+  read -r -p "ENTER para voltar..." _
+  exec bash "$SCRIPT_DIR/menu_octave.sh"
 fi
 
 # snapshot de dirs depois
@@ -69,7 +88,8 @@ fi
 
 if [[ -z "$TARGET_DIR" || ! -d "$TARGET_DIR" ]]; then
   echo "⚠️ Não foi possível identificar a pasta de saída criada pelo script."
-  read -p "ENTER para voltar..." ; bash "$SCRIPT_DIR/menu_octave.sh"; exit 0
+  read -r -p "ENTER para voltar..." _
+  exec bash "$SCRIPT_DIR/menu_octave.sh"
 fi
 
 SRC_ABS="$COD_DIR/$TARGET_DIR"
@@ -85,5 +105,5 @@ echo ""
 echo "✅ Execução concluída e saída organizada."
 echo "📁 Pasta da simulação: $DEST_ABS"
 echo ""
-read -p "Pressione ENTER para retornar ao menu Octave..."
-bash "$SCRIPT_DIR/menu_octave.sh"; exit 0
+read -r -p "Pressione ENTER para retornar ao menu Octave..." _
+exec bash "$SCRIPT_DIR/menu_octave.sh"

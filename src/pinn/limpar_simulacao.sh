@@ -1,9 +1,22 @@
 #!/bin/bash
 
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
+
 # Diretórios relativos
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SIM_DIR="$(readlink -f "$ROOT_DIR/../simulacoes/pinn")"
+
+# Caminhos via env.sh (com fallback)
+AESC_ROOT="${AESC_ROOT:?AESC_ROOT não definido; verifique etc/env.sh}"
+SIMS_BASE="${AESC_SIMS_DIR:-$AESC_ROOT/simulations}"
+SIM_DIR="$SIMS_BASE/pinn"
 
 clear
 echo ""
@@ -18,15 +31,17 @@ echo ""
 
 if [[ ! -d "$SIM_DIR" ]]; then
   echo "❌ Diretório de simulações PINN não encontrado: $SIM_DIR"
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-cd "$SIM_DIR" || { echo "❌ Falha ao acessar $SIM_DIR"; read -p "ENTER..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1; }
+cd "$SIM_DIR" || { echo "❌ Falha ao acessar $SIM_DIR"; read -r -p "ENTER..."; exec bash "$SCRIPT_DIR/menu_pinn.sh"; }
 
 mapfile -t PASTAS < <(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" -printf "%P\n" | sort)
 if [[ ${#PASTAS[@]} -eq 0 ]]; then
   echo "⚠️ Nenhuma pasta de simulação encontrada em $SIM_DIR."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 echo "🧹 Pastas de simulações encontradas:"
@@ -37,14 +52,15 @@ RET_IDX=${#PASTAS[@]}
 echo " [$RET_IDX] 🔙 Voltar ao menu PINN"
 echo ""
 
-read -p "Digite o número da pasta que deseja limpar: " escolha
+read -r -p "Digite o número da pasta que deseja limpar: " escolha
 
 if [[ "$escolha" == "$RET_IDX" ]]; then
-  bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 if ! [[ "$escolha" =~ ^[0-9]+$ ]] || (( escolha < 0 || escolha >= ${#PASTAS[@]} )); then
   echo "❌ Opção inválida."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 1
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
 PASTA="${PASTAS[$escolha]}"
@@ -53,14 +69,15 @@ ABS_PATH="$SIM_DIR/$PASTA"
 echo ""
 echo "⚠️ Confirma limpar TODO o conteúdo de:"
 echo "   $ABS_PATH"
-read -p "Digite 'SIM' para confirmar: " conf
+read -r -p "Digite 'SIM' para confirmar: " conf
 if [[ "$conf" != "SIM" ]]; then
   echo "❌ Operação cancelada."
-  read -p "Pressione ENTER para retornar ao menu PINN..."; bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-rm -r "$ABS_PATH"
+rm -rf -- "$ABS_PATH"
 echo ""
 echo "✅ Limpeza concluída em: $ABS_PATH"
-read -p "Pressione ENTER para retornar ao menu PINN..."
-bash "$SCRIPT_DIR/menu_pinn.sh"; exit 0
+read -r -p "Pressione ENTER para retornar ao menu PINN..."
+exec bash "$SCRIPT_DIR/menu_pinn.sh"

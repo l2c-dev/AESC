@@ -1,8 +1,12 @@
 #!/bin/bash
-# Ajuda e boas práticas (offline)
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do [ -f "$_aesc_env" ] && . "$_aesc_env" && break; done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 clear
 echo ""
@@ -42,9 +46,8 @@ cat <<'TXT'
   - Mensagens de commit curtas e informativas (imperativo curto: feat/fix/docs).
   - Use branches para features maiores.
   - README como contrato do projeto: como instalar, executar e reproduzir resultados.
-
 TXT
 
 echo ""
-read -p "Pressione ENTER para retornar ao menu Git..."
-bash "$SCRIPT_DIR/menu_git.sh"; exit 0
+read -r -p "Pressione ENTER para retornar ao menu Git..." _
+exec bash "$SCRIPT_DIR/menu_git.sh"

@@ -1,8 +1,12 @@
 #!/bin/bash
-# Menu Git – AESC (100% offline)
+# ─────────────────────────── Carrega env.sh (mínimo e idempotente) ─────────────
+_AESC_LOADER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$_AESC_LOADER_DIR/../.." && pwd)"
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do [ -f "$_aesc_env" ] && . "$_aesc_env" && break; done
+unset _aesc_env _AESC_LOADER_DIR
+# ────────────────────────────────────────────────────────────────────────────────
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 clear
 echo ""
@@ -24,14 +28,14 @@ while true; do
   echo " [4] 📜 Menu ajuda"
   echo " [0] 🔙 Voltar ao menu principal"
   echo ""
-  read -p "Digite a opção desejada: " opc
+  read -r -p "Digite a opção desejada: " opc
 
   case "$opc" in
-    1) bash "$SCRIPT_DIR/clonar_repo.sh" ;;
-    2) bash "$SCRIPT_DIR/iniciar_projeto.sh" ;;
-    3) bash "$SCRIPT_DIR/gerar_readme.sh" ;;
-    4) bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
-    0) 
+    1) exec bash "$SCRIPT_DIR/clonar_repo.sh" ;;
+    2) exec bash "$SCRIPT_DIR/iniciar_projeto.sh" ;;
+    3) exec bash "$SCRIPT_DIR/gerar_readme.sh" ;;
+    4) exec bash "$SCRIPT_DIR/menu_ajuda.sh" ;;
+    0)
        echo "🔙 Voltando ao menu principal..."
        sleep 0.4
        break
@@ -40,7 +44,7 @@ while true; do
   esac
 
   echo ""
-  read -p "Pressione ENTER para retornar ao menu Git..."
+  read -r -p "Pressione ENTER para retornar ao menu Git..." _
   clear
 done
 exit 0

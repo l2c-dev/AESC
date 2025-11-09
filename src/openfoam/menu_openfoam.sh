@@ -5,6 +5,16 @@ clear
 SCRIPT_PATH="$(readlink -f "$0")"
 BASE_DIR="$(dirname "$(dirname "$SCRIPT_PATH")")"
 
+# Resolve SCRIPT_DIR
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+AESC_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Carrega env.sh (procura primeiro em etc/, depois fallback em src/ ou raiz)
+for _aesc_env in "$AESC_ROOT/etc/env.sh" "$AESC_ROOT/src/env.sh" "$AESC_ROOT/env.sh"; do
+  [ -f "$_aesc_env" ] && . "$_aesc_env" && break
+done
+unset _aesc_env
+
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
