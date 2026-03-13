@@ -29,6 +29,7 @@ while true; do
   echo ""
   echo " [1] ▶️  Executar código PINN"
   echo " [2] 🧹 Limpar simulação"
+  echo " [3] 📡 Monitorar simulação"
   echo " [0] 🔙 Voltar ao menu principal"
   echo ""
   read -r -p "Digite a opção desejada: " opcao
@@ -36,6 +37,7 @@ while true; do
   case "$opcao" in
     1) exec bash "$SCRIPT_DIR/executar_codigo.sh" ;;
     2) exec bash "$SCRIPT_DIR/limpar_simulacao.sh" ;;
+    3) exec bash "$SCRIPT_DIR/monitorar_simulacao.sh" ;;
     0)
       echo "🔙 Voltando ao menu principal..."
       sleep 0.3

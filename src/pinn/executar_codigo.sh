@@ -83,71 +83,47 @@ if [[ ! -f "$ALVO" ]]; then
   exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-# Snapshot de diretórios ANTES (dentro de COD_DIR)
-cd "$COD_DIR" || { echo "❌ Falha ao acessar $COD_DIR"; read -r -p "ENTER..."; exec bash "$SCRIPT_DIR/menu_pinn.sh"; }
-mapfile -t DIRS_BEFORE < <(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" ! -name "__pycache__" -printf "%P\n" | sort)
+# Cria pasta de saída em simulations/pinn e exporta AESC_OUTDIR
+mkdir -p "$SIM_DIR"
+RUN_TS="$(date +'%Y%m%d-%H%M%S')"
+RUN_DIR="$SIM_DIR/pinn_run_${RUN_TS}"
+mkdir -p "$RUN_DIR"
 
+export AESC_OUTDIR="$RUN_DIR"
+
+echo ""
+echo "📁 Pasta de saída configurada para esta execução:"
+echo "   $RUN_DIR"
+echo "   (o script Python gravará parâmetros, log.treino, VTK e figuras nessa pasta)"
 echo ""
 echo "🚀 Executando: $PY_CMD $(basename "$ALVO")"
-echo "   (aguarde a finalização do código; logs/prints são do script Python)"
+echo "   ➜ Após responder às perguntas, a simulação será enviada para o background"
+echo "   ➜ O próprio script exibirá o PID do processo e o caminho do log."
 echo ""
 
-# Execução síncrona
-"$PY_CMD" "$ALVO"
+# Executa no diretório de códigos, deixando o Python cuidar do detach/background
+cd "$COD_DIR" || {
+  echo "❌ Falha ao acessar $COD_DIR"
+  read -r -p "Pressione ENTER para retornar ao menu PINN..."
+  exec bash "$SCRIPT_DIR/menu_pinn.sh"
+}
+
+"$PY_CMD" "$(basename "$ALVO")"
 PY_STATUS=$?
 
 echo ""
 if [[ $PY_STATUS -ne 0 ]]; then
-  echo "❌ Execução retornou código de erro ($PY_STATUS)."
-  echo "   Verifique a saída acima e eventuais logs gerados pelo script."
+  echo "❌ O script Python retornou código de erro ($PY_STATUS)."
+  echo "   Verifique as mensagens acima e, se existir, o arquivo:"
+  echo "   $RUN_DIR/log.treino"
   read -r -p "Pressione ENTER para retornar ao menu PINN..."
   exec bash "$SCRIPT_DIR/menu_pinn.sh"
 fi
 
-# Snapshot de diretórios DEPOIS (dentro de COD_DIR)
-mapfile -t DIRS_AFTER < <(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" ! -name "__pycache__" -printf "%P\n" | sort)
-
-# Calcula novos diretórios criados
-declare -A SEEN
-for d in "${DIRS_BEFORE[@]}"; do SEEN["$d"]=1; done
-NEW_DIRS=()
-for d in "${DIRS_AFTER[@]}"; do
-  if [[ -z "${SEEN[$d]}" ]]; then NEW_DIRS+=("$d"); fi
-done
-
-TARGET_DIR=""
-if [[ ${#NEW_DIRS[@]} -gt 0 ]]; then
-  # Se múltiplos, pega o mais recente por mtime
-  newest=$(printf "%s\n" "${NEW_DIRS[@]}" | while read -r dn; do stat -c "%Y %n" "$dn"; done | sort -n | tail -1 | cut -d' ' -f2-)
-  TARGET_DIR="$newest"
-else
-  # Fallback: pega diretório mais recente em COD_DIR
-  newest=$(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*" ! -name "__pycache__" -printf "%T@ %P\n" | sort -n | tail -1 | cut -d' ' -f2-)
-  TARGET_DIR="$newest"
-fi
-
-if [[ -z "$TARGET_DIR" || ! -d "$TARGET_DIR" ]]; then
-  echo "⚠️ Não foi possível identificar a pasta de saída criada pelo script."
-  read -r -p "Pressione ENTER para retornar ao menu PINN..."
-  exec bash "$SCRIPT_DIR/menu_pinn.sh"
-fi
-
-# Move a pasta para simulations/pinn
-SRC_ABS="$COD_DIR/$TARGET_DIR"
-DEST_ABS="$SIM_DIR/$(basename "$TARGET_DIR")"
-if [[ -e "$DEST_ABS" ]]; then
-  TS="$(date +'%Y%m%d-%H%M%S')"
-  DEST_ABS="${DEST_ABS}_$TS"
-fi
-
-echo "📦 Movendo saída:"
-echo "   De: $SRC_ABS"
-echo "   Para: $DEST_ABS"
-mv "$SRC_ABS" "$DEST_ABS"
-
-echo ""
-echo "✅ Execução concluída e saída organizada."
-echo "📁 Pasta da simulação: $DEST_ABS"
+echo "✅ Rotina de lançamento concluída."
+echo "   Se nenhum erro foi exibido acima, a simulação deve estar rodando em background."
+echo "   Pasta da simulação: $RUN_DIR"
+echo "   Log principal:       $RUN_DIR/log.treino"
 echo ""
 read -r -p "Pressione ENTER para retornar ao menu PINN..."
 exec bash "$SCRIPT_DIR/menu_pinn.sh"

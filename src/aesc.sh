@@ -35,9 +35,10 @@ while true; do
     echo " [3] - PINNs 🤖 "
     echo " [4] - Octave scripts 📉 "
     echo " [5] - Python científico 🐍 "
-    echo " [6] - LIGGGHTS ⚙️  "
+    echo " [6] - XFOIL 🛩️ "
     echo " [7] - GIT 🧰 "
-    echo " [8] - Acessar terminal (sair) 🖥️  "
+    echo " [8] 📡 Monitorar simulações em execução (global)"
+    echo " [9] - Acessar terminal (sair) 🖥️  "
     echo ""
     read -p "Digite o número da opção desejada: " opcao
     echo ""
@@ -68,15 +69,14 @@ while true; do
             ;;
 
         6)
-            echo "🔧 Ambiente LIGGGHTS ainda não implementado..."
-            sleep 1
-            echo "🔙 Voltando ao menu principal..."
-            sleep 0.6
+            bash "$SCRIPT_DIR/xfoil/menu_xfoil.sh"
             ;;
         7)
             bash "$SCRIPT_DIR/git/menu_git.sh"
             ;;
         8)
+            bash "$AESC_ROOT/src/monitorar_aesc.sh" ;;
+        9)
             echo "🖥️  Acessando terminal..."
             sleep 1
             exit 0
