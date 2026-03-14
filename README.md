@@ -1,3 +1,4 @@
+
 # 🧪 AESC – Ambientes de Execução de Simulações Científicas
 
 [![L2C](https://img.shields.io/badge/L2C-Soluções%20em%20Computação%20Científica-blue)](https://www.l2c.dev.br)
@@ -45,7 +46,7 @@ AESC/
 │   ├── pinn/                # Ambiente PINN (PyTorch)
 │   ├── python/              # Ambiente Python científico
 │   ├── octave/              # Ambiente Octave
-│   ├── liggghts/            # Ambiente LIGGGHTS (DEM)
+│   ├── xfoil/               # Ambiente XFOIL (análise aerodinâmica)
 │   └── git/                 # Ambiente de integração com Git/GitHub
 │
 ├── codigos/                 # Códigos-fonte
@@ -54,7 +55,7 @@ AESC/
 │   ├── pinn/
 │   ├── python/
 │   ├── octave/
-│   └── liggghts/
+│   └── xfoil/
 │
 ├── simulacoes/              # Resultados de simulação
 │   ├── openfoam/
@@ -62,7 +63,7 @@ AESC/
 │   ├── pinn/
 │   ├── python/
 │   ├── octave/
-│   └── liggghts/
+│   └── xfoil/
 │
 └── docs/                    # Documentação e exemplos futuros
 ```
@@ -76,57 +77,56 @@ AESC/
 - **PINNs 🤖** – Redes Neurais Informadas por Física (PyTorch + VTK)  
 - **Python Científico 🐍** – Scripts de análise de dados e machine learning  
 - **Octave 📉** – Problemas numéricos clássicos com GNU Octave  
-- **LIGGGHTS ⚙️** – Simulações DEM de partículas  
+- **XFOIL 🛩️** – Análise aerodinâmica de perfis utilizando o solver clássico XFOIL  
 - **Git 🧰** – Criação e clonagem de repositórios científicos  
 
-Cada ambiente tem menus próprios, mantendo a **mesma estética e lógica operacional**.  
+Cada ambiente possui menus próprios, mantendo a **mesma estética e lógica operacional**.  
 Todos os scripts usam caminhos relativos, garantindo portabilidade entre diferentes máquinas.
 
 ---
 
 ## ⚙️ Como Executar / How to Run
 
-1. Clone este repositório para a sua máquina:  
+1. Clone este repositório para a sua máquina:
 
-   ```bash
-   git clone https://github.com/l2c-dev/AESC.git
-   ```
+```bash
+git clone https://github.com/l2c-dev/AESC.git
+```
 
-2. Acesse o diretório e dê permissão de execução:  
+2. Acesse o diretório e dê permissão de execução:
 
-   ```bash
-   cd AESC
-   find src -type f -name "*.sh" -exec chmod +x {} \;
-   ```
+```bash
+cd AESC
+find src -type f -name "*.sh" -exec chmod +x {} \;
+```
 
-3. Edite seu arquivo `~/.bashrc` e adicione um **alias** para facilitar:  
+3. Edite seu arquivo `~/.bashrc` e adicione um **alias** para facilitar:
 
-   ```bash
-   alias aesc='/src/aesc.sh'
-   ```
+```bash
+alias aesc='/src/aesc.sh'
+```
 
-   > Ajuste o caminho conforme o local onde você instalou o AESC.
+> Ajuste o caminho conforme o local onde você instalou o AESC.
 
-4. Recarregue seu bashrc:  
+4. Recarregue seu bashrc:
 
-   ```bash
-   source ~/.bashrc
-   ```
+```bash
+source ~/.bashrc
+```
 
-5. Agora basta digitar:  
+5. Agora basta digitar:
 
-   ```bash
-   aesc
-   ```
+```bash
+aesc
+```
 
-   e o menu principal será carregado 🎉
+e o menu principal será carregado 🎉
 
 ---
 
 ## 🤝 Créditos
 
-Projeto desenvolvido por **Prof. Rafael Gabler Gontijo** no contexto da [**L2C – Soluções em Computação Científica**](https://www.l2c.dev.br).  
+Projeto desenvolvido por **Prof. Rafael Gabler Gontijo** no contexto da  
+[**L2C – Soluções em Computação Científica**](https://www.l2c.dev.br).
 
 A L2C atua em consultoria, treinamento e desenvolvimento de software científico baseado em **open source**, com foco em **simulação computacional científica**.
-
----
